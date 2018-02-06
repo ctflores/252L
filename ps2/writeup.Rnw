@@ -214,7 +214,7 @@ plot(b,get_coef(m)[,2]); abline(0,1)
 
 @
 
-Using a normal link function, mirt predicts easy items are easier than they actually are and hard items are harder than they actually are.  The farther an item is from zero, the larger the gap between estimated diffuculty and specified difficulty.  The slope of the line here is 1.7, so it is possible to transform between them, but the community tends to prefer the logistic because it is computationally simpler (even if the normal is theoretically nicer).
+Using a normal link function, mirt predicts easy items are easier than they actually are and hard items are harder than they actually are.  The farther an item is from zero, the larger the gap between estimated diffuculty and specified difficulty.  The slope of the line of best fit here is 1.7, so it is possible to transform between them, but the community tends to prefer the logistic because it is computationally simpler (even if the normal is theoretically nicer).
 
 \subsection{Heavy Tails}
 
@@ -245,7 +245,7 @@ plot(b,get_coef(m)[,2]); abline(0,1) #hm, what is going on here? can we make sen
 
 @
 
-When using a skewed distribution as the link function, every item is estimated as being harder than it actually is, but where this model really tanks is for extremely easy items.  It finds those to be significantly harder than they actually are and the difference between actual and estimated difficulty for easy items diverges wildly.  The skew on the link function is set up in a way that there is essentially no impact of increased $\theta$ on the respondent's probability of getting the item correct until $\theta$ gets to a value of $-1$.  Remember that the input to the model is of the form $\theta_i + b_j$.  If trait values less than $-1$ don't provide any increase in probability of scoring correctly on an item, for items with easiness above $1$, the model will view those as significantly harder than they actually are.  If you look at the $b_estimated$ vs. $b$ curve, you can see that at $b =1$, the estimated easiness starts to take a turn away from actual easiness.  This is a product of the link function being non-symmetric, essentially causing the two halves of the graph to be scaled differently.
+When using a skewed distribution as the link function, every item is estimated as being harder than it actually is, but where this model really tanks is for extremely easy items.  It finds those to be significantly harder than they actually are and the difference between actual and estimated difficulty for easy items diverges wildly.  The skew on the link function is set up in a way that there is essentially no impact of increased $\theta$ on the respondent's probability of getting the item correct until $\theta$ gets to a value of $-1$.  Remember that the input to the model is of the form $\theta_i + b_j$.  If trait values less than $-1$ don't provide any increase in probability of scoring correctly on an item, for items with easiness above $1$, the model will view those as significantly harder than they actually are.  If you look at the $b_{estimated}$ vs. $b$ curve, you can see that at $b =1$, the estimated easiness starts to take a turn away from actual easiness.  This is a product of the link function being non-symmetric, essentially causing the two halves of the graph to be scaled differently.
 
 \pagebreak
 \section{Adding A Lower Asymptote}
@@ -291,13 +291,13 @@ plot(density(coefs[,2])) #what do you make of this?
 
 @
 
-When moving the lower asymptote above zero, we simulate guessing.  In the original model, with no guessing parameter, the discrimination density plot was centered around 1.  Now, it is centered around 0.75.  This happens because raising the floor of the logistic curve fundamentally changes its shape, lowering the discrimination.
+When moving the lower asymptote above zero, we simulate guessing.  In the original model, with no guessing parameter, the discrimination density plot was centered around 1.  Now, it is centered around 0.75.  This happens because raising the floor of the logistic curve fundamentally changes its shape, lowering the discrimination. This makes sense because when a question allows for guessing, correct answers give us less information about the latent trait of the test-taker.
 
 <<echo=FALSE, results='hide'>>=
 plot(b,coefs[,1]); abline(0,1) #how about this?
 
 @
 
-When looking at the item easiness estimates, the model overestimates easiness.  This is especially true for the harder questions(easiness less than zero), where the estimate starts to diverge from the actual difficulty.  One explanation for this is that for harder questions, a larger segment of the population is benefitting from guessing, where on easier questions, a smaller segment of the population benefits from guessing (because they were already getting that item correct).
+When looking at the item easiness estimates, the model overestimates easiness.  This is especially true for the harder questions(easiness less than zero), where the estimate starts to diverge from the actual difficulty.  One explanation for this is that for harder questions, a larger segment of the population is benefitting from guessing, whereas on easier questions, a smaller segment of the population benefits from guessing (because they were already getting that item correct).
 
 \end{document}
