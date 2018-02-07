@@ -164,7 +164,7 @@ Looking at the resulting plots, it's clear that even with nonsensical item respo
 \section{Basic Structure of IR Models}
 \begin{enumerate}
 \item
-<<results='hide', echo=FALSE>>=
+<<reults='hide', echo=FALSE>>=
 ni<-30
 np<-100000
 ##now we're going to simulate data according to this model and examine some key properties
@@ -195,7 +195,7 @@ for (i in 1:ncol(resp)) {
   glm(resp[,i]~th,family="binomial")->mod
   coef(mod)->coefs[[i]]
 }
-mod
+
 do.call("rbind",coefs)->coefs
 ?density
 ##let's consider them separately.
@@ -209,71 +209,10 @@ and a is the item discrimination coefficient.
 
 
 \item
-<<results='hide', echo=FALSE>>=
+<<reults='hide', echo=FALSE>>=
 plot(b,coefs[,1]); abline(0,1)
 @
 This plot shows that the b's are almost the same as the intercepts, which makes sense because it means that the actual item easiness is close to the estimated easiness.
-
-\item
-<<results='hide', echo=FALSE>>=
-sim_data<-function(b, #item difficulties
-                   np=1000,
-                   link=function(x) exp(x)/(1+exp(x))
-)
-{
-  ni<-length(b)
-  th<-rnorm(np)
-  th.mat<-matrix(th,np,ni,byrow=FALSE) 
-  a<-1
-  b.mat<-matrix(b,np,ni,byrow=TRUE) #these are the item difficulties
-  ##now the probability of a correct response is:
-  pr<-link(a*th.mat+b.mat) ##look very carefully here at how b.mat is being included. is this what you expect? if not, take a look at ?mirt (specifically the form used for the Rash itemtype).
-  test<-matrix(runif(ni*np),np,ni)
-  resp<-ifelse(pr>test,1,0)
-  colnames(resp)<-paste("i",1:ncol(resp))
-  resp
-}
-
-
-
-
-##first, the default
-b<-rnorm(50)
-resp<-sim_data(b=b) 
-library(mirt)
-m<-mirt(resp,1,itemtype="Rasch")
-get_coef<-function(mod) {
-  coef(mod)->co
-  co[-length(co)]->co
-  do.call("rbind",co)
-}
-#plot(b,get_coef(m)[,2]); abline(0,1)
-
-##now, the normal
-b<-rnorm(50)
-resp<-sim_data(b=b,link=pnorm) 
-m<-mirt(resp,1,itemtype="Rasch")
-#plot(b,get_coef(m)[,2]); abline(0,1) 
-?mirt
-##something with heavy tails
-b<-rnorm(50)
-resp<-sim_data(b=b,link=function(x) pt(x,df=50)) 
-m<-mirt(resp,1,itemtype="Rasch")
-#plot(b,get_coef(m)[,2]); abline(0,1) 
-
-##skew
-
-library(sn)
-x<-seq(-3,3,length.out=100)
-plot(x,dsn(x,alpha=3),type="l") #note the skew
-plot(x,psn(x,alpha=3),type="l") #corresponding icc
-b<-rnorm(50)
-resp<-sim_data(b=b,link=function(x) dsn(x,alpha=3)) 
-m<-mirt(resp,1,itemtype="Rasch")
-plot(b,get_coef(m)[,2]); abline(0,1) #hm, what is going on here? can we make sense of why parameter estimation is quite bad when b is large
-@
-This is showing that when items get easier, the estimation gets worse and actually predicts that they're harder. 
-
 \end{enumerate}
 
 \section{Different Link Functions}
