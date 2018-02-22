@@ -1,0 +1,511 @@
+\documentclass{article}
+\usepackage{parskip}
+\usepackage{amsmath}
+\usepackage{lineno}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+
+\newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+
+\linenumbers
+
+\title{Problem Set 3}
+\author{Carrie Kathlyn Townley Flores, Filipe Recch, Kaylee Tuggle Matheny, \\ Klint Kanopka, Kritphong Mongkhonvanit \\ EDUC 252L}
+
+<<echo=FALSE,warning=FALSE,message=FALSE,error=FALSE>>=
+knitr::opts_chunk$set(cache=TRUE, echo = FALSE, fig.pos="H",fig.height=4, fig.width=8, fig.align = "center")
+library(mirt)
+library(psych)
+require(WrightMap)
+@
+
+\begin{document}
+\maketitle
+
+\section*{Shortish Answer}
+\begin{enumerate}
+
+\item Suppose that we have a test scaled with the Rasch model whose first 3 items have known difficulties -1, 0, and 1.5. An examinee with ability theta got the first item right, the second item right, and the third item wrong. Can you write the likelihood of observing this sequence of item responses as a function of theta?
+
+The likelihood of getting each item right in the Rash model is given by:
+
+$$ \frac{\epsilon^{\theta - b}}{1+\epsilon^{\theta - b}} $$ 
+
+Therefore, each item's likelihood, considering its difficulty is as follows:
+Item dif -1: $ \frac{\epsilon^{\theta + 1}}{1+\epsilon^{\theta + 1}} $ \\
+Item dif 0: $ \frac{\epsilon^{\theta - 0}}{1+\epsilon^{\theta - 0}} $ \\
+Item dif 1.5: $ 1 - \frac{\epsilon^{\theta - 1.5}}{1+\epsilon^{\theta - 1.5}} $ 
+
+The chance of getting the specific sequence is the product of the probabilities of each item in the sequence. Hence, a 1-1-0 sequence has the probability equal to:
+
+$$ \left(\frac{\epsilon^{\theta + 1}}{1+\epsilon^{\theta + 1}}\right) \times \left(\frac{\epsilon^{\theta - 0}}{1+\epsilon^{\theta - 0}} \right) \times \left(1 - \frac{\epsilon^{\theta - 1.5}}{1+\epsilon^{\theta - 1.5}} \right) $$
+
+\item Can you plot this as a function of theta?
+
+<<graph1, fig.cap="Probabilities as a function of theta">>=
+th<-seq(-3,3,length.out=1000)
+p<-function(b) exp(th-b)/(1+exp(th-b))
+
+plot(th,p(-1)*p(0)*(1-p(1.5)), ylim = c(0,.4), type = "n", xlab = expression(theta))
+lines(th,p(-1)*p(0)*(1-p(1.5)), ylim = c(0,.4), lwd= 3)
+@
+
+\item If theta=0.5, what is the likelihood of that response sequence?
+
+<<echo=TRUE>>=
+th<-0.5
+p<-function(b) exp(th-b)/(1+exp(th-b))
+round(p(-1)*p(0)*(1-p(1.5)),3)
+@
+
+\item If theta=0.5, what is the most likely response sequence given the known item difficulties? 
+
+The probabilities of getting each item right is \Sexpr{round(p(-1),2)}, \Sexpr{round(p(0),2)} and \Sexpr{round(p(1.5),2)}, respectively for item difficulties of -1, 0, 1.5. Therefore, the most likely sequence is exactly 1-1-0.
+
+\item At what value of theta does a response sequence of 1-1-0 (that is: they got the first and second items right and the third item wrong) become more likely than a response sequence of 1-0-0?
+
+<<graph2, fig.cap="Probabilities as a function of theta">>=
+th<-seq(-3,3,length.out=1000)
+plot(th,p(-1)*p(0)*(1-p(1.5)), ylim = c(0,.4), type = "n", xlab = expression(theta))
+lines(th,p(-1)*p(0)*(1-p(1.5)), ylim = c(0,.4), lwd = 3)
+lines(th,p(-1)*(1-p(0))*(1-p(1.5)), lwd = 3, lty = 2)
+abline(v=0)
+@
+
+Considering that the only difference between the two sequeces is either the student got the second item right or wrong and that this specific item has difficulty $b = 0$, then getting 1-1-0 becames more likely at $\theta = 0$.
+
+\item Returning to questions 1 and 2, can you plot the ``test information" as a function of theta (see Eqn 2-6 in Lord). 
+
+To get the test information we need to sum over the all items information. In order to get the item information, we need to take the derivative with respect to $\theta$ of the probability of getting each item right. The ``test information" is as follows:
+
+$$ \displaystyle\sum \ddfrac{\left(\ddfrac{\epsilon^{\theta+b}}{\left(\epsilon^{\theta}+\epsilon^{b}\right)^2}\right)^2}{\left(\ddfrac{\epsilon^{\theta-b}}{1+ \epsilon^{\theta-b}}\right) \left(1 - \ddfrac{\epsilon^{\theta-b}}{1 + \epsilon^{\theta-b}}\right)} $$
+
+Using this formula, we get figure \ref{fig:graph3}.
+
+<<graph3, fig.cap="Test information curve">>=
+# derivative of p
+pp <- function(b) {
+	exp(th+b)/(exp(b)+exp(th))^2
+}
+item_info <- function(b) {
+	pp(b)^2/(p(b)*(1-p(b)))
+}
+
+item_info_points <- item_info(-1)+item_info(0)+item_info(1.5)
+plot(th, item_info_points, type="n", xlab = expression(theta))
+lines(th, item_info_points, lwd=3)
+@
+
+\item Where is the function in \#6 maximized? What do you think this implies? 
+
+In this case, the maximum is at 0.027.  This, in a sense, represents the ability score that the the test is best at measuring.  More specifically, the test is good at discerning between abilities near this value and worse at discerning between abilities far from this value.
+
+<<>>=
+th[which(item_info_points==max(item_info_points))]
+@
+
+Since the value is very close to zero, it implies that $\theta$ will be
+estimated most precisely when it is close to zero.
+
+\item For an item response dataset of your choosing, consider the relationship between theta and the SE across the three IRT models for dichotomous items. How much of a difference does the choice of model have on the size of the error estimate?
+
+First consider plots of the standard error vs. ability for the three IRT models, generated from the emp-rasch.txt data set used in lab:
+
+<<results='hide', fig.cap="Standard error as a function of ability">>=
+respk<-read.table("emp-rasch.txt",header=FALSE)
+
+#generate models
+modk1<-mirt(respk,1,itemtype="Rasch")
+modk2<-mirt(respk,1,itemtype="2PL")
+modk3<-mirt(respk,1,itemtype="3PL")
+
+#estimate and sort abilities
+fscores(modk1,full.scores.SE=TRUE)->thk1
+thk1[order(thk1[,1]),]->thk1
+fscores(modk2,full.scores.SE=TRUE)->thk2
+thk2[order(thk2[,1]),]->thk2
+fscores(modk3,full.scores.SE=TRUE)->thk3
+thk3[order(thk3[,1]),]->thk3
+
+#generate plots
+plot(jitter(thk1),xlab="theta",ylab="se", main='Rasch',xlim=c(-4,4), ylim=c(0.175,0.625))
+plot(jitter(thk2),xlab="theta",ylab="se",main='2PL',xlim=c(-4,4), ylim=c(0.175,0.625))
+plot(jitter(thk3),xlab="theta",ylab="se",main='3PL',xlim=c(-4,4), ylim=c(0.175,0.625))
+@
+
+As you increase the number of estimated parameters in a model, the standard error, as a whole, decreases.  One interesting feature is the area of lowest standard error shifts between the models.  This is likely due to the change in estimated item difficulties as the models increase in complexity.  The reduction in standard error for more complex models makes sense, because the models ought to be able to fit the data better.  The most intersting part is the increase in error variance as the models become more complex.  This also makes sense, because there are more quantities being estimated for each item.  For the 3PL, especially, estimates of the guessing parameter are particularly unstable with low to moderate numbers of respondents, so this feature also makes sense.
+
+\section*{Consulting Excercise}
+
+A CTT approach would not be a responsible choice for the NDE to use with a high-stakes test. It would be easier and cheaper but much less meaningful. The only information we can get from a set of test scores in CTT is the total score of each of the test-takers. Any information we can get about the test items through CTT is population specific. As seen below, the data of 1000 test-takers organizes students by ability based only on their total scores, where theta is only meaningful in comparison to other test takers:
+
+\centering
+<<echo=FALSE, results='hide', out.width='.6\\linewidth'>>=
+resp<-read.table("https://raw.githubusercontent.com/ben-domingue/252L_winter2018/master/data/nde_math_white_space.txt",header=FALSE)
+library(mirt)
+library(psych)
+library(GPArotation)
+rowSums(resp)->scoresNDE
+scoresNDE
+scoresNDE[5]
+mu = mean(scoresNDE)
+s = sd(scoresNDE)
+theta = double()
+(scoresNDE[65]-mu)/s
+scoresNDE[54]
+for (i in 1:1000) {
+  theta[i] = (scoresNDE[i]-mu)/s
+}
+plot(unlist(theta), unlist(scoresNDE), xlab = 'Ability (theta)', ylab = 'Score' )
+hist(as.numeric(theta), xlab = 'Ability (theta)', ylab = 'Frequency')
+@
+\raggedright
+This measure is only meaningful to the extent that our items are perfectly designed. In reality, items are not separated by even intervals, and they are not perfectly designed, so CTT is really lacking. 
+
+As a hint of what measures of item quality we should be interested in, in the following chart, for each test item, test-takers' scores are compared to the percentage of students who answered that item correctly. This can give us information about which items are easier and which are harder. This chart is organized from the hardest items in the upper left, where almost no one answered correctly, to the easiest in the lower right, where at least some students at nearly all score levels answered correctly. This kind of analysis would tell us that we should consider dropping the first item because none of our students are answering it correctly, so it could be throwing off our analyses. This kind of analysis could also show us if some items are behaving in such a way that it does not follow an increasing pattern across student scores, in which case we should review whether or not that item has an element construct irrelevance, for instance. However, it could also be that the item is fine but our test-takers are not of high enough ability for that item. To determine this, other analyses are needed that CTT can not give us.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.6\\linewidth'>>=
+resp<-read.table("https://raw.githubusercontent.com/ben-domingue/252L_winter2018/master/data/nde_math_white_space.txt",header=FALSE)
+tmp<-list()
+rowSums(resp)->rs
+for (i in sort(unique(rs))) {
+  resp[rs==i,]->tmp[[as.character(i)]]
+} #so what is structure of tmp? 
+do.call("rbind",tmp)->resp #this is a kind of tough command. see if you can make sense of it. i find working in this way with lists is super intuitive once you see the logic (let's talk if you don't!).
+
+##we'll do the items a little more succinctly. we could have done something like this for the people.
+colSums(resp)->cs
+resp[,order(cs,decreasing=FALSE)]->resp 
+
+##just a quick double check that everything is monotonic in the ways we'd expect
+##what do you expect to see? before running the next set of commands, draw a pictue for yourself. 
+par(mfrow=c(2,1))
+#plot(colMeans(resp),type="l")
+#plot(rowMeans(resp),type="l")
+##pause at this point to check in with a Ben
+
+#############################################################
+##now we have most able examinees on the bottom and the hardest items on the left.
+##aside: my entire dissertation was spent futzing about with implications that following from such ordeings. https://link.springer.com/article/10.1007/s11336-013-9342-4
+##let's condense this by collapsing rows so that all individuals with a common score are represented in a single row.
+##a cell will now tell us the proportion of respondents in that row who responded correctly to a given item
+rowSums(resp)->rs
+tmp<-list()
+sort(unique(rs))->rs.sorted
+for (i in rs.sorted) {
+  resp[rs==i,,drop=FALSE]->z
+  colMeans(z)->tmp[[as.character(i)]]
+}
+do.call("rbind",tmp)->prop
+rs.sorted->rownames(prop)
+##note: it is this sort of list usage that i find very convenient. for each element of the list, we transformed a matrix (containing all respondents with a given sum score) into a single row vector (containing the proportion of correct responses to each item for the group of examinees with common sum score).
+##that was handy!                                        
+
+#################################################################
+##let's now look at the proportion of correct responsees as a function of sum score (for every row) for each item
+##again, before running, what do you expect to see?
+as.numeric(rownames(prop))->rs
+#5->i #first with just a single item
+#plot(rs,prop[,i],xlim=range(rs),ylim=0:1,xlab="sum score",ylab="% correct",type="l")
+
+##Now all items
+par(mfrow=c(10,5),mar=c(0,0,0,0))
+for (i in 1:40) {
+  plot(rs,prop[,i],xlim=range(rs),ylim=0:1,xlab="sum score",ylab="% correct",type="l",xaxt="n",yaxt="n")
+}
+@
+\raggedright
+In another visual that gives related information, here is a chart showing the correlation of patterns of test-taker responses as a function of the number of test-takers who answered that item correctly.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.5\\linewidth'>>=
+#CTT Model
+get.coors<-function(resp) {
+  r.xt<-numeric() #initializing a numeric vector
+  ss<-rowSums(resp) #these are the sum scores/observed scores of CTT
+  for (i in 1:ncol(resp)) {
+    r.xt[i]<-cor(ss,resp[,i]) #for any i, what is this?
+  }
+  r.xt
+}
+
+r <- get.coors(resp) #item total correlations
+p <- colMeans(resp) #p values
+
+plot.fun<-function(resp) { #don't worry too much about the details here in the first pass.
+  pv<-colMeans(resp,na.rm=TRUE)
+  r.xt<-get.coors(resp)
+  plot(pv,r.xt,pch=19)
+  ##everything below here just goes into the red line
+  loess(r.xt~pv)->m
+  cbind(pv,fitted(m))->tmp
+  lines(tmp[order(tmp[,1]),],col="red")
+  NULL
+}
+
+plot.fun(resp) #plots item total correlations vs p-values
+@
+\raggedright
+This shows how the responses to each item correlate. 
+
+In the next chart, we will take a different look at how item responses correlate with one another. White indicates no correlation, red means negative correlation, and blue means positive correlation. We can see that a few items are weakly correlated, and one item is negatively correlated with the other items. The line that is showing up with some red is the line associated with the item in the upper left corner of our earlier by-item chart. By showing that the trends in item responses to this item are not correlated with the trends in other items, it gives us further evidence that this item may have construct irrelevant variance. The lighter rows or columns also indicate some items that may be weaker and should be revisited. On the other hand, if items are showing up with very high correlations or dark blue squares, we will be alerted that we may have mirroring items that we need to cull.
+
+\centering
+\begin{figure}
+<<NDECorrelations, echo=FALSE, results='hide', out.width='.5\\linewidth'>>=
+library(psych)
+library(GPArotation)
+resp<-read.table("https://raw.githubusercontent.com/ben-domingue/252L_winter2018/master/data/nde_math_white_space.txt",header=FALSE)
+png('NDECorrelations.png')
+circ <- resp
+r.circ <- cor(resp)
+cor.plot(r.circ,main='Correlations of NDE item scores')
+dev.off()
+@
+\includegraphics[scale=0.45]{NDECorrelations}
+\end{figure}
+\raggedright
+Using analyses like the ones above, we can also detect cheating across schools or within classrooms. If trends in student responses to certain items are widely variant from the rest of the population, we can flag a set of tests for further review.
+\raggedright
+
+What we can get out of each of these charts is that there is one outlying item that almost no one in our sample got correct, and that this pattern was not correlated with the patterns seen in any other items. This is useful information, but it is sample specific. It could be that this pattern is a function of something about this group of test-takers. Certainly the scatter of the correlation of patterns of test-item responses among questions that more test-takers answered correctly is population specific, and it may not look the same given another population. We want a model of measurement whose information is not specific to the population taking the test.
+\raggedright
+
+As the Rasch model can show us, abilities should probably be estimated as functions of attributes of the items. That would give us a measurement scale that does not change across populations. In the earlier by-item chart, we can see that the curves rise at different rates across test-taker score-levels, which indicates that some items are easier than others. With the Rasch model, we can numerically estimate item difficulty (or easiness), which can be used to give us better estimates of test-taker abilities. We can also get more information about the quality of our items this way.
+\raggedright
+
+A good test will have items that have difficulties that sufficiently cover the range of expected abilities such that they give us information at every place along the spectrum of abilities that we have interest in. CTT can not verify this.
+\raggedright
+
+In fact, by analyzing our data through the Rasch model, we find that most of the items fall between -2 and 2 standard deviations of average easiness, with one extreme outlier, as shown below.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.6\\linewidth'>>=
+mod1<-mirt(resp,1,itemtype="Rasch")
+theta1<-fscores(mod1,method="ML",full.scores=TRUE)
+#plot(theta1)
+
+#rasch_fit <- itemfit(mod1,fit_stats='infit')
+
+#plot(rasch_fit[,4], main='Infit')
+#plot(rasch_fit[,2], main='Outfit')
+
+plot(extract.mirt(mod1,'parvec'), main = 'Estimated Item Easiness') #plots estimated item easiness
+@
+\raggedright
+This is an advantage over CTT in two ways. It lets us better analyze our test, and it gives us meaningful information about a single test-taker, apart from how they fare among other test-takers. In IRT, we can estimate a test-taker's ability based on the difficulty of the items that person answered correctly. Test-takers with the same sum score may be found to have different abilities, and the ranking from the Rasch model is more accurate that way. 
+
+IRT also allows us to analyze test reliability by measuring Cronbach's alpha, which is a measure of internal consistency. In fact, the Rasch model shows us that our items are reliable. A score above .7 is generally considered good. This score only increases when we remove item 22, which we already sense is problematic.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.5\\linewidth'>>=
+cronbach_alpha<-function(resp) {
+    k<-ncol(resp)
+    v.i<-apply(resp,2,var)
+    o<-rowSums(resp)
+    (k/(k-1))*(1-sum(v.i)/var(o))
+}
+
+cronbach_alpha(resp)
+resp22 <- resp[-22]
+cronbach_alpha(resp22)
+@
+\raggedright
+Cronbach's alpha = \Sexpr{round(cronbach_alpha(resp),3)} %this is printing alpha
+
+Cronbach's alpha without item 22 = \Sexpr{round(cronbach_alpha(resp22),3)}
+\raggedright
+
+Before we go much further into that explanation, I want to address the other argument, that we should switch to the even more computationally complex 3PL model. It is proposed that because this model actually gives us even more parameters with which to score our test-takers, it is superior to the Rasch model. Namely, the 3PL model lets us look at item discrimination, or how quickly the probability of getting a correct answer increases with respect to ability, and a guessing parameter that could theoretically correct scores for the possiblity of guessing on item answers. Taking into account item discrimination does give us more information at the ability levels associated with sharply discriminating items. However, the guessing parameter is very difficult to estimate, and overall, this model is not a huge improvement over the Rasch model, and I do not recommend its use. However, it is worth exploring what this model has to offer.
+
+Now that we have laid the groundwork, we can start comparing CTT, the Rasch, and the 3PL models. In the following chart, you will see three bar graphs showing the distribution of abilities determined by each of the models. Below the diagonal, you can see regressions of the model in that column, as the x-axis, against the model in that row, as the y-axis, with ellipses noting one standard deviation in each direction around the mean. Above the diagonal, you will see Pearson correlation coefficients, which show that each of the models is similar, with the Rasch and 3PL nearly perfectly correlated. What you will note regarding the CTT model compared to the other two is that students given the same sum score, and therefore the same ability under CTT, are spread among a range of abilities in the other two models. This happens because the other two models are taking into account characteristics of the items themselves. You will also notice that while the range of abilities in the 3PL method provides a more normal-looking curve due to lowering some students' abilities after taking into account a guessing parameter, the measurement of the 3PL is otherwise very close to that of the Rasch model.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.75\\linewidth'>>=
+##Ben's Code for Fancy Plots
+# resp<-read.table("https://raw.githubusercontent.com/ben-domingue/252L_winter2018/master/data/nde_math_white_space.txt",header=FALSE)
+# 
+# library(mirt)
+rowSums(resp,na.rm=TRUE)->ctt.est
+#number of factors to extract
+m1 <- mirt(resp,1)
+rasch.est <- fscores(m1)[,1]
+difs_rash <- extract.mirt(m1,'parvec')
+
+m3 <- mirt(resp,itemtype="3PL",1)
+three.est <- fscores(m3)[,1]
+difs_3pl <- extract.mirt(m1,'parvec')
+
+df <- data.frame(ctt.est,rasch.est,three.est)
+pairs.panels(df,pch='.',gap=0)
+@
+\raggedright
+The extra information offered by the guessing parameter in the 3PL method may be enticing, but it is actually cumbersome to compute accurately (For example, we can not do it with our small sample of 1000!). A guessing parameter is also an artifact of the test-takers rather than the test itself, and it varies among test-taking groups. We have to ask ourselves what we want out of the measurement device we choose. If we want a device that acts like a ruler, working the same way for every population, then we need to abandon the 3PL method.
+\raggedright
+
+In my effort to convince you, I will show you in more detail the differences among the models. 
+In CTT, we have a discrete number of ability scores we can give test-takers, based on the number of items in the test. With IRT, ability scores fall in a continuum above and below the mean in a near normal distribution.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.6\\linewidth'>>=
+#Rasch Model
+mod1<-mirt(resp,1,itemtype="Rasch")
+theta1<-fscores(mod1,method="ML",full.scores=TRUE)
+plot(theta1)
+@
+\raggedright
+Similarly, in the 2PL and the 3PL (shown here), abilities fall in a continuum. The outliers have near-perfect or near-imperfect scores.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.6\\linewidth'>>=
+mod2<-mirt(resp,1,itemtype="3PL")
+theta2<-fscores(mod2,method="ML",full.scores=TRUE)
+plot(theta2)
+@
+\raggedright
+It is important to note how the ability estimates change from model to model.
+
+\centering
+<<echo=FALSE, results='hide', fig.cap="Distribution of changes in respondent ability measures between models", out.width='.6\\linewidth'>>=
+#generate models
+mod1<-mirt(resp,1,itemtype="Rasch")
+mod2<-mirt(resp,1,itemtype="2PL")
+mod3<-mirt(resp,1,itemtype="3PL")
+
+#estimate and sort abilities
+fscores(mod1,full.scores.SE=TRUE)->th1
+th1[order(th1[,1]),]->th1
+fscores(mod2,full.scores.SE=TRUE)->th2
+th2[order(th2[,1]),]->th2
+fscores(mod3,full.scores.SE=TRUE)->th3
+th3[order(th3[,1]),]->th3
+
+#distribution of changes in respondent ability
+hist(th3[,1]-th1[,1],xlab='delta theta',main='Rasch -> 3PL')
+hist(th2[,1]-th1[,1],xlab='delta theta',main='Rasch -> 2PL')
+hist(th3[,1]-th2[,1],xlab='delta theta',main='2PL -> 3PL')
+@
+\raggedright
+As you can see, most ability estimates do not change much from the Rasch to the 3PL model, and none increase by more than .5 standard deviations. A few more decrease in ability, but as you will see, this comes with caveats as the standard errors also increase and increase in variation at the low end of the 3PL model estimates. Also, in high-stakes testing, it is more harmful to make errors in scoring test-takers at too low abilities than too high abilities, so keeping the Rasch model over the 3PL model is not increasing the chance of doing harm. It is not to say that we should choose a model because it gives test-takers higher scores, but it is to say that if we do not trust the 3PL model fully, and if it is prone to more variance in error at the lower end, we have many reasons not to choose it.
+\raggedright
+
+These ability estimates depend on item characteristics determined by the models. The information we have about the test-takers at various ability levels is based on the amount of information the items give us. Along with the information curves above, we can look at Wright Maps to determine where we have the most information and where we are lacking information. Wherever we have the most information, the standard errors in our ability estimates will be lowest.
+
+\centering
+<<echo = FALSE, results='hide'>>=
+library(mirt)
+library(psych)
+require(WrightMap)
+wrightMap(rasch.est,difs_rash, item.side = "itemClassic", main.title = "Wright Map: Rasch Model")
+wrightMap(three.est,difs_3pl, item.side = "itemClassic", main.title = "Wright Map: 3PL")
+@
+\raggedright
+This shows that we are missing information at the low end and the highest ends of abilities. Sure enough, this can be shown by the item information curves.
+
+\raggedright
+If we look at just the first five items in our sample, item information curves look like this:
+
+\centering
+<<echo=FALSE, results='hide', out.width='.6\\linewidth'>>=
+firstfive = resp[1:5]
+fa(firstfive, rotate = TRUE)
+# Gives Item Information from Factor Analysis IRT
+tryirt <- irt.fa(firstfive)
+respirt <- irt.fa(x = firstfive)
+@
+\raggedright
+This shows that the first item offers the most information around -1, and the rest offer the most information around 0. If all of our items looked like one of these, we would want to know because these items do not give us much information about the students 1 standard deviation above the mean or 2 standard deviations below. 
+\raggedright
+
+If we look at all 40 items, we can analyze the whole sample test.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.5\\linewidth'>>=
+fa(resp, rotate = TRUE)
+# Gives Item Information from Factor Analysis IRT
+tryirt <- irt.fa(resp)
+plot(tryirt,type="IIC")
+@
+\raggedright
+The low discrimination of a few items, shown by the flatter information curves, indicate that while some items may not be throwing off our ability scores, they are not giving us much information about our test-takers' abilities either.
+\raggedright
+
+Based on this visual of the information each item is giving us, we can calculate where in the ability distribution the test is most meaningful.
+
+\centering
+<<echo=FALSE, results='hide', out.width='.5\\linewidth'>>=
+plot(tryirt,type="test")
+@
+\raggedright
+As you can see, we do not have a lot of information at the low or mid-high ranges, which tells us that we will have higher errors in our scores at these ranges.
+\raggedright
+
+This also shows us that we have some items that are so poorly discriminating, they may be worth replacing as they are not contributing greatly to our overall measurement goal.
+\raggedright
+
+It is interesting to note that the above example used item discrimination, which is a parameter in the 2PL and 3PL models, but not in the Rasch model. The 2PL model would tell us the discrimination of our items looks like this:
+
+\centering
+<<echo=FALSE, results='hide', out.width='.6\\linewidth'>>=
+#3PL
+mod2<-mirt(resp,1,itemtype="3PL")
+# theta2<-fscores(mod2,method="ML",full.scores=TRUE)
+# plot(theta2)
+# 
+# 
+# #see what difference is made in ability estimates from going rasch to 3pl
+# dtheta <- theta2-theta1
+# hist(dtheta)
+# 
+# g2 <- extract.mirt(mod2, 'G2') #extracts "goodness of fit" statistic
+# g2
+
+#plot estimated item parameters
+matrix(extract.mirt(mod2,'parvec'),ncol=3,byrow=TRUE) -> pars
+plot(pars[,1], main = 'Estimated Item Discrimination')  #this might be easiness
+@
+\raggedright
+While this seems like important information, it does not actually affect the overall test information curve that much. As you can see in the test information curves, the Rasch model offers almost the same overall information as the 2PL model.
+
+\centering
+<<echo=FALSE, results='hide',fig.cap="Test information by model", out.width='.6\\linewidth'>>=
+dev.off()
+#test information plots
+plot(th1[,1],testinfo(mod1,th1[,1]),xlab='theta',ylab='information',main='Rasch')
+plot(th2[,1],testinfo(mod2,th2[,1]),xlab='theta',ylab='information',main='2PL')
+plot(th3[,1],testinfo(mod3,th3[,1]),xlab='theta',ylab='information',main='3PL')
+@
+\raggedright
+Unsurprisingly, the standard error curves mirror the information curves.
+
+\centering
+<<echo=FALSE, results='hide', fig.cap="Standard error as a function of ability", out.width='.6\\linewidth'>>=
+
+#generate plots
+plot(jitter(th1),xlab="theta",ylab="se", main='Rasch',xlim=c(-4,4))
+plot(jitter(th2),xlab="theta",ylab="se",main='2PL',xlim=c(-4,4))
+plot(jitter(th3),xlab="theta",ylab="se",main='3PL',xlim=c(-4,4))
+@
+\raggedright
+As you can see, the 3PL method adds quite a bit of measurement error at the low end, especially with this set of items that is missing information at the low end, and with this sample size that is inappropriate for generating guessing parameters. The Rasch model is more appropriate for our purposes. 
+\raggedright
+
+Finally, we should ask whether or not the Rasch model has good fit, and we see that it does, with the exception of our one item that we already know to be faulty.
+
+\centering
+<<echo=FALSE,results='hide',message=FALSE, fig.height=2.75>>=
+#Rasch Model
+mod1<-mirt(data,1,itemtype="Rasch")
+rasch_fit <- itemfit(mod1,fit_stats='infit')
+plot(density(rasch_fit[,2]), main='Outfit')
+
+abline(v=1-1.96*.05,col='red')
+abline(v=1+1.96*.05,col='red')
+@
+\raggedright
+Given the wealth of information, reliability, model fit, and accuracy we can gain by using the Rasch model and the unsubstantial gains we sustain by moving to the computationally expensive 3PL model, I recommend that the NDE use the Rasch model in our analyses.
+
+\end{enumerate}
+\end{document}
