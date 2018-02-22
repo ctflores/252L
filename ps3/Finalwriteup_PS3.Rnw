@@ -113,7 +113,7 @@ estimated most precisely when it is close to zero.
 First consider plots of the standard error vs. ability for the three IRT models, generated from the emp-rasch.txt data set used in lab:
 
 <<results='hide', fig.cap="Standard error as a function of ability">>=
-respk<-read.table("emp-rasch.txt",header=FALSE)
+respk<-read.table("https://raw.githubusercontent.com/ben-domingue/252L_winter2018/master/data/emp-rasch.txt",header=FALSE)
 
 #generate models
 modk1<-mirt(respk,1,itemtype="Rasch")
@@ -495,9 +495,9 @@ As you can see, the 3PL method adds quite a bit of measurement error at the low 
 Finally, we should ask whether or not the Rasch model has good fit, and we see that it does, with the exception of our one item that we already know to be faulty.
 
 \centering
-<<echo=FALSE,results='hide',message=FALSE, fig.height=2.75>>=
+<<echo=FALSE,results='hide',message=FALSE, error=FALSE, warning=FALSE,fig.height=2.75>>=
 #Rasch Model
-mod1<-mirt(data,1,itemtype="Rasch")
+mod1<-mirt(resp,1,itemtype="Rasch")
 rasch_fit <- itemfit(mod1,fit_stats='infit')
 plot(density(rasch_fit[,2]), main='Outfit')
 

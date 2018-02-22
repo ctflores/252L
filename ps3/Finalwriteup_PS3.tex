@@ -179,36 +179,34 @@ estimated most precisely when it is close to zero.
 First consider plots of the standard error vs. ability for the three IRT models, generated from the emp-rasch.txt data set used in lab:
 
 \begin{knitrout}
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
+
+{\centering \includegraphics[width=\maxwidth]{figure/unnamed-chunk-4-1} 
+
+}
+
+\caption[Standard error as a function of ability]{Standard error as a function of ability}\label{fig:unnamed-chunk-41}
+\end{figure}
+
+\begin{figure}[H]
+
+{\centering \includegraphics[width=\maxwidth]{figure/unnamed-chunk-4-2} 
+
+}
+
+\caption[Standard error as a function of ability]{Standard error as a function of ability}\label{fig:unnamed-chunk-42}
+\end{figure}
+
+\begin{figure}[H]
+
+{\centering \includegraphics[width=\maxwidth]{figure/unnamed-chunk-4-3} 
+
+}
+
+\caption[Standard error as a function of ability]{Standard error as a function of ability}\label{fig:unnamed-chunk-43}
+\end{figure}
 
 
-{\ttfamily\noindent\color{warningcolor}{\#\# Warning in file(file, "{}rt"{}): cannot open file 'emp-rasch.txt': No such file or directory}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in file(file, "{}rt"{}): cannot open the connection}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in is.data.frame(x): object 'respk' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in is.data.frame(x): object 'respk' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in is.data.frame(x): object 'respk' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in is(object, "{}DiscreteClass"{}): object 'modk1' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'thk1' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in is(object, "{}DiscreteClass"{}): object 'modk2' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'thk2' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in is(object, "{}DiscreteClass"{}): object 'modk3' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'thk3' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in jitter(thk1): object 'thk1' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in jitter(thk2): object 'thk2' not found}}
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in jitter(thk3): object 'thk3' not found}}\end{kframe}
 \end{knitrout}
 
 As you increase the number of estimated parameters in a model, the standard error, as a whole, decreases.  One interesting feature is the area of lowest standard error shifts between the models.  This is likely due to the change in estimated item difficulties as the models increase in complexity.  The reduction in standard error for more complex models makes sense, because the models ought to be able to fit the data better.  The most intersting part is the increase in error variance as the models become more complex.  This also makes sense, because there are more quantities being estimated for each item.  For the 3PL, especially, estimates of the guessing parameter are particularly unstable with low to moderate numbers of respondents, so this feature also makes sense.
@@ -549,10 +547,7 @@ Finally, we should ask whether or not the Rasch model has good fit, and we see t
 
 \centering
 \begin{knitrout}
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-
-
-{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in if (length(unique(colnames(data))) != ncol(data)) stop("{}items must have unique names in data input"{}, : argument is of length zero}}\end{kframe}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
 {\centering \includegraphics[width=\maxwidth]{figure/unnamed-chunk-21-1} 
 
