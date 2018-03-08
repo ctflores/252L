@@ -161,9 +161,11 @@ abline(v=mean(uts),col='blue')
 	\end{enumerate}
 
 	\item
+	\textit{Estimate eqn 19 for each math item. We are looking for items that function differently for those with high and low reading abilities. Report what you find. Is anything concerning?}
+	
 	If there is DIF, $\beta_2$ will be large. When the groups are split into high and low readers at the mid-point, where X = 1 if the reader is in the top 50\%, there are several items with statistically significant $\beta_2$ values around 0.5. These items are likely story problems with a reading component. The highest $\beta_2$s likely indicate construct-irrelevant variance or multi-dimensionality due to a reading component. 
  
-Interestingly, there are also a handful of items with statistically significant negative $\beta_2$ values, indicating that students in the top 50\% of readers found those items more difficult. 
+Interestingly, there are also a handful of items with statistically significant negative $\beta_2$ values, indicating that students in the top 50\% of readers found those items more difficult. These could be malfunctioning items, or they could be items that are so difficult that everyone guessed and it is by random chance that a larger portion of lower readers answered correctly. Something else could also be going on where there is some construct irrelevant variance that favors students who are lower readers. Lower and higher readers may have been in different classes where the lower readers had access to some special information related to these problems that higher readers did not. In any case, they are worth exploring further.
  
 For instance, many of the highest-scoring readers answered math item 2\_8 incorrectly. 
 
@@ -233,7 +235,6 @@ When the groups are split differently so more students are in the low-scoring re
 
 When the groups are split so the low-scoring readers group is quite small (n = 462), there are still a few items with negative $\beta_2$s. There may be something wrong with the item. Item 1\_11 stands out in this group.
 <<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide'>>=
-options(width=60)
 #Variable G: by rdg score, Group 1 = high score
 dfDIF$rdg_G = 0
 for (i in 732:1462){
