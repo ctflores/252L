@@ -1,0 +1,502 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{lineno}
+\usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+
+\newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+
+\linenumbers
+
+\title{Problem Set 4}
+\author{Carrie Kathlyn Townley Flores, Filipe Recch, Kaylee Tuggle Matheny, \\ Klint Kanopka, Kritphong Mongkhonvanit \\ EDUC 252L}
+
+<<echo=FALSE,warning=FALSE,message=FALSE,error=FALSE>>=
+knitr::opts_chunk$set(cache=TRUE, echo = FALSE, results='hide', message=FALSE, fig.pos="H",fig.height=5, fig.width=8, fig.align = "center")
+library(mirt)
+@
+
+\begin{document}
+\maketitle
+
+\begin{enumerate}
+	\item
+<<>>=
+##You have N draws from some distribution f()
+##let's call the vector of draws x
+##You want to test a null hypothesis something like: f() has "spread" (loosely defined here) similar to that of the normal distribution.
+
+##let's consider two test statistics
+##a. the SD of the data (so, h0: sd(x)=1)
+##b. the IQR of the data (so, h0: iqr(x)= qnorm(.75)-qnorm(.25)=1.35)
+##obviously these are both related to the variation in the data.
+
+##now, different draws of x will results in different test statistics. we can utilize simulation to generate the null distribution of these test statistics
+
+set.seed(13141)
+ts1<-ts2<-numeric() #these will be test statistics for different draws of x
+N<-250
+for (i in 1:1000) {
+    x<-rnorm(N) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+    ts1[i]<-sd(x)
+    ts2[i]<-quantile(x,.75)-quantile(x,.25)
+}
+
+##Now let's generate test statistics from a scenario in which the null hypothesis is false (e.g., f() is the student's T distribution with df=5)
+obs<-rt(N,df=5)
+obs.ts1<-sd(obs) #1.4
+obs.ts2<-quantile(obs,.75)-quantile(obs,.25) #1.6
+##so we can see that ts1 falls well outside of the distribution geneated when null hypothesis is true (compare to lefthand panel of figure). ts2, however, is a less sensitive test here (compare to righthand panel of figure). to the extent that we were interested in asking whether the unknown data-generating function f() had variation comparable to the normal, we'd perhaps be better off looking at the SD rather than the IQR.
+
+quantile(ts1,c(.025,.975)) #so, we expect variation in our first test statistic under the null between ~(0.91,1.09)
+quantile(ts2,c(.025,.975)) #here we expect variation between (1.2,1.5)
+get.pseudop<-function(val,ec) {
+    fun<-ecdf(ec)
+    fun(val)->xx
+    xx
+}
+get.pseudop(obs.ts1,ts1)
+get.pseudop(obs.ts2,ts2)
+
+##it looks to me like ts1 is a way better test statistic for examining the hypothesis that observed variation is consistent with what we get from a normal distribution. to be authoritative we'd want to conduct this experiment many many times.
+@
+
+	\begin{enumerate}
+		\item
+		\textit{Does ts2 become a more discerning test statistic (in an
+		absolute sense, not relative to ts1) as we increase N?}
+<<>>=
+##1. does ts2 become a more discerning test statistic (in an absolute sense, not relative to ts1) as we increase N?
+
+pp <- numeric()
+svec <- numeric()
+snvec <- numeric()
+Ns <-seq(10, 2000, length.out=100)
+
+for (s in 1:100) {
+  ts<-tns<-numeric() #these will be test statistics for different draws of x
+  for (i in 1:1000) {
+    s.x<-rt(Ns[s],df=5) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+    ts[i]<-quantile(s.x,.75)-quantile(s.x,.25)
+    sn.x<-rnorm(Ns[s]) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+    tns[i]<-quantile(sn.x,.75)-quantile(sn.x,.25)
+  }
+  svec[s] <- mean(ts)
+  snvec[s] <- mean(tns)
+  pp[s] <- get.pseudop(mean(ts),tns)
+}
+par(mfrow=c(1,1))
+plot(Ns,pp, xlab='N', ylab='Pseudo p-Value')
+abline(h=0.975,col='red')
+@
+		Yes, it starts to become useful around N=1000.
+
+		\item
+		\textit{Does the performance of ts2 improve if you go from the iqr to a
+		more/less extreme spread? (i have no clue what the answer is!)}
+<<>>=
+##2. does the performance of ts2 improve if you go from the iqr to a more/less extreme spread? (i have no clue what the answer is!)
+pp <- numeric()
+svec <- numeric()
+snvec <- numeric()
+vals<-seq(0.5, 1, length.out=100)
+N<-250
+for (s in 1:100) {
+  ts<-tns<-numeric() #these will be test statistics for different draws of x
+  for (i in 1:1000) {
+    s.x<-rt(N,df=5) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+    ts[i]<-quantile(s.x,vals[s])-quantile(s.x,(1-vals[s]))
+    sn.x<-rnorm(N) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+    tns[i]<-quantile(sn.x,vals[s])-quantile(sn.x,(1-vals[s]))
+  }
+  svec[s] <- mean(ts)
+  snvec[s] <- mean(tns)
+  pp[s] <- get.pseudop(mean(ts),tns)
+}
+par(mfrow=c(1,1))
+plot(vals,pp, xlab='Upper Percentile', ylab='Pseudo p-Value')
+abline(h=0.975,col='red')
+@
+		For a fixed N, the ability of some type of range statistic to
+		discern between the z and t ditsributions increases as the width
+		of that range increases.
+
+		\item
+		\textit{Can you come up with a test statistic for the null
+		hypothesis that f() IS the normal distribution?}
+<<>>=
+##3. (harder) can you come up with a test statistic for the null hypothesis that f() IS the normal distribution?
+# Yes - 1-2*sd/(range of the middle 68.2% of the data) - centered around zero for normal distributions.  
+
+N<-250
+uts<-tons<-ts<-tns<-numeric() #these will be test statistics for different draws of x
+for (i in 1:1000) {
+  s.x<-rt(N,df=5) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+  ts[i]<- 1-2*sd(s.x)/(quantile(s.x,.841)-quantile(s.x,.159))
+  sn.x<-rnorm(N) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+  tns[i]<-1-2*sd(sn.x)/(quantile(sn.x,.841)-quantile(sn.x,.159))
+  on.x<-rnorm(N, mean=3, sd=1.5) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+  tons[i]<-1-2*sd(on.x)/(quantile(on.x,.841)-quantile(on.x,.159))
+  u.x<-runif(N) #note that i've in fact added something to the null hypothesis here: that the data in fact comes from the standard normal
+  uts[i]<-1-2*sd(u.x)/(quantile(u.x,.841)-quantile(u.x,.159))
+}
+get.pseudop(mean(tns),tns)
+get.pseudop(mean(uts),tns)
+get.pseudop(mean(ts),tns)
+get.pseudop(mean(tons),tns)
+
+quantile(tns,c(.025,.975))
+mean(ts)
+mean(tns)
+mean(tons)
+mean(uts)
+plot(density(tns),xlim=c(-.2,.2),main='Distribution of Test Statistics')
+abline(v=mean(ts),col='red')
+abline(v=mean(tons),col='green')
+abline(v=mean(uts),col='blue')
+@
+		Yes, 1-$\left(\frac{2 \cdot sd}{\text{range of the middle 68.2\% of
+		the data}}\right)$ centered around zero for normal distributions.
+
+	\end{enumerate}
+
+	\item
+	If there is DIF, $\beta_2$ will be large. When the groups are split into high and low readers at the mid-point, where X = 1 if the reader is in the top 50\%, there are several items with statistically significant $\beta_2$ values around 0.5. These items are likely story problems with a reading component. The highest $\beta_2$s likely indicate construct-irrelevant variance or multi-dimensionality due to a reading component. 
+ 
+Interestingly, there are also a handful of items with statistically significant negative $\beta_2$ values, indicating that students in the top 50\% of readers found those items more difficult. 
+ 
+For instance, many of the highest-scoring readers answered math item 2\_8 incorrectly. 
+
+<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide'>>=
+options(width=60, height=20)
+dfDIF <- read.table("https://raw.githubusercontent.com/ben-domingue/252L_winter2018/master/data/emp-3pl-math-reading.txt", header=TRUE)
+library(dplyr)
+library(tidyr)
+library(mirt)
+library(lmtest)
+library(broom)
+#group reading
+group <- dfDIF %>% select(contains("r.mc"))
+
+#create rdgscore
+for (i in 1:1462){
+  dfDIF$rdgscore[i] = sum(group[i,])
+}
+
+#group math
+groupm <- dfDIF %>% select(contains("m.mc"))
+mathitems <- names(groupm)
+#create mathscore
+for (i in 1:1462){
+  dfDIF$math_X[i] = sum(groupm[i,])
+}
+
+#sort by rdgscore
+dfDIF<- dfDIF[order(dfDIF$rdgscore, dfDIF$math_X),]
+
+#Variable G: by rdg score, Group 1 = high score
+dfDIF$rdg_G = 1
+for (i in 1:731){
+  dfDIF$rdg_G[i] = 0
+}
+
+#Plot Beta_2 and colorcode for pvalues
+Bsnps = data.frame(x = 1:45, y = 1:45, row.names = mathitems)
+for (i in mathitems){
+  lmfit <-  glm(dfDIF[,i] ~ math_X + rdg_G, family = "binomial", dfDIF)
+  Bsnps1 <- tidy(lmfit)
+  Bsnps[i,] <- c(Bsnps1[3,2], Bsnps1[3,5])
+}
+
+plot(Bsnps$x, xlab="items", ylab="Beta_2", col = ifelse(Bsnps$y < .05,'red','green'), main = "Beta_2 when low reading group n = 731", xaxt='n')
+axis(1, at=1:45, labels=mathitems, las=3)
+
+@
+
+Part of why we may be seeing this pattern is that this test is that items like item 2\_11 may be too difficult for this group. The red items in the next plot indicate items that have a mean score below .25, which could indicate that even high readers either had big misunderstandings or resorted to guessing. All of the hardest items had negative $\beta_2$s.
+<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide'>>=
+meanss <- list()
+for (i in mathitems){
+  meanss[i]<- (mean(dfDIF[,i]))
+}
+meanss
+as.vector(meanss)
+Bsnpsnmeans <- data.frame(x = Bsnps["x"], y =Bsnps["y"])
+Bsnpsnmeans$means = meanss
+Bsnpsnmeans[order("x")]
+plot(Bsnpsnmeans$x, xlab="items", ylab="Beta_2", col = ifelse(Bsnpsnmeans$means < .25,'red','green'), main = "Beta_2 when low reading group n = 731, red = mean score < .25", xaxt='n')
+axis(1, at=1:45, labels=mathitems)
+@
+
+
+When the groups are split differently so more students are in the low-scoring readers' group (n = 1000), there are still items showing statistically significant negative $\beta_2$s, indicating that the very top readers are still more inclined to answer these items incorrectly. Items like 1\_11 have statistically significantly negative $\beta_2$s except in the most exclusive splittings of the reading groups, indicating that the middle-high readers are getting the item disproportionately wrong, but the highest readers are managing it.
+
+When the groups are split so the low-scoring readers group is quite small (n = 462), there are still a few items with negative $\beta_2$s. There may be something wrong with the item. Item 1\_11 stands out in this group.
+<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide'>>=
+options(width=60)
+#Variable G: by rdg score, Group 1 = high score
+dfDIF$rdg_G = 0
+for (i in 732:1462){
+  dfDIF$rdg_G[i] = 1
+}
+#NewSplit 1 = top 462
+dfDIF$rdg_G2 = 1
+for (i in 1:1000){
+  dfDIF$rdg_G2[i] = 0
+}
+
+#NewSplit 1 = top 15
+dfDIF$rdg_G3 = 1
+for (i in 1:1447){
+  dfDIF$rdg_G3[i] = 0
+}
+#NewSplit 1 = top 1000
+dfDIF$rdg_G4 = 0
+for (i in 462:1000){
+  dfDIF$rdg_G4[i] = 1
+}
+
+Bsnps = data.frame(x = 1:45, y = 1:45, row.names = mathitems)
+#Plot Beta_2 and colorcode for pvalues
+for (i in mathitems){
+  lmfit <-  glm(dfDIF[,i] ~ math_X + rdg_G2, family = "binomial", dfDIF)
+  Bsnps1 <- tidy(lmfit)
+  Bsnps[i,] <- c(Bsnps1[3,2], Bsnps1[3,5])
+}
+
+plot(Bsnps$x, xlab="items", ylab="Beta_2", col = ifelse(Bsnps$y < .05,'red','green'), main = "Beta_2 when low reading group n = 1000", xaxt='n')
+axis(1, at=1:45, labels=mathitems, las=3)
+
+Bsnps = data.frame(x = 1:45, y = 1:45, row.names = mathitems)
+#Plot Beta_2 and colorcode for pvalues
+for (i in mathitems){
+  lmfit <-  glm(dfDIF[,i] ~ math_X + rdg_G3, family = "binomial", dfDIF)
+  Bsnps1 <- tidy(lmfit)
+  Bsnps[i,] <- c(Bsnps1[3,2], Bsnps1[3,5])
+}
+
+plot(Bsnps$x, xlab="items", ylab="Beta_2", col = ifelse(Bsnps$y < .05,'red','green'), main = "Beta_2 when low reading group n = 1447", xaxt='n')
+axis(1, at=1:45, labels=mathitems, las=3)
+
+Bsnps = data.frame(x = 1:45, y = 1:45, row.names = mathitems)
+#Plot Beta_2 and colorcode for pvalues
+for (i in mathitems){
+  lmfit <-  glm(dfDIF[,i] ~ math_X + rdg_G4, family = "binomial", dfDIF)
+  Bsnps1 <- tidy(lmfit)
+  Bsnps[i,] <- c(Bsnps1[3,2], Bsnps1[3,5])
+}
+
+plot(Bsnps$x, xlab="items", ylab="Beta_2", col = ifelse(Bsnps$y < .05,'red','green'), main = "Beta_2 when low reading group n = 462", xaxt='n')
+axis(1, at=1:45, labels=mathitems, las = 3)
+
+@
+	\item
+<<message=FALSE,results='hide'>>=
+set.seed(12311)
+read.table("emp-reading-3pl-gpcm.txt",header=TRUE)->resp
+resp[rowSums(is.na(resp))==0,]->resp
+resp[1:5000,]->resp
+#just the constructed response items
+grep("^cr",names(resp))->index
+resp[,index]->resp
+
+##Let's look at different dichotomizations for just a single item, #2
+
+Theta <- matrix(seq(-4,4, by = .1))
+colors <- c("black", "red", "green", "blue")
+apply_cutoff <- function(min_score) {
+    resp->tmp
+    ifelse(tmp[,2]>=min_score,1,0)->tmp[,2]
+    mirt(tmp, itemtype="gpcmIRT",1,SE=TRUE)
+}
+dic <- c(	mirt(resp, itemtype="gpcmIRT",1,SE=TRUE),
+		sapply(1:3, apply_cutoff) )
+
+@
+	\begin{enumerate}
+		\item
+		 What is the effect of dichotomizing low (e.g., responses of 1 and 2 become 1) versus high (e.g., responses of 0 and 1 become 0) on the central tendency and spread of information curves. \\
+		 
+		The information curves will peak at the cutoff points, therefore if we dichotomize low we will have more information about lower levels of $\theta$. The same behaviour is the same if we decide to dichotomize at the higher points. Finally, the peaks appear to spread uniformly across the x-axis from the cut off points. 
+
+<<>>=
+for (i in 1:4) {
+    extr.2 <- extract.item(dic[[i]], 2)
+    info.tmp <- iteminfo(extr.2, Theta)
+    (if (i==1) plot else lines)(Theta,info.tmp,col=colors[i],type="l", xlab=expression(theta))
+}
+
+legend(	x="topright",
+	col=c("black","red","green","blue"),
+	lty=c(1,1,1,1),
+	legend=c(	"polytomous",
+			"cutoff at 1",
+			"cutoff at 2",
+			"cutoff at 3"))
+@
+
+		\item
+		How do standard errors for theta compare when we estimate the GPCM on the data versus low and high dichotimizations? \\
+		
+		The standard error is smallest when the cutoff point is the closest to the maxima of the polytomous information curve. Therefore, we will have lower levels of SE when we have more information across $\theta$. In this case, it happens when the cutoff is at two.
+
+<<>>=
+for (i in 1:4) {
+    extr.2 <- extract.item(dic[[i]], 2)
+    SE.tmp <- 1/sqrt(iteminfo(extr.2, Theta))
+    (if (i==1) plot else lines)(Theta,SE.tmp,col=colors[i],type="l", xlab=expression(theta))
+}
+
+legend(x="bottomright",
+	col=c("black","red","green","blue"),
+	lty=c(1,1,1,1),
+	legend=c("polytomous",
+			"cutoff at 1",
+			"cutoff at 2",
+			"cutoff at 3"))
+@
+
+
+<<message=FALSE,fig.width=6>>=
+# get SEs for dichotomous items
+se <- sapply(	2:length(dic),
+		function(i) coef(dic[[i]],printSE=TRUE)[[2]][2,][["b1"]] )
+barplot(se,xlab="Cutoff Score",ylab="Standard Error",names.arg=paste(1:3))
+@
+	\end{enumerate}
+
+	\item
+	Here's an implementation of the EM algorithm:
+	
+<<echo=TRUE>>=
+EM <- function(PA,PB,sets,N,pA,pB){
+  
+  #construct flip matrix
+  flips <- matrix(NA,sets,N)
+  for (i in 1:sets){
+    prob <- ifelse(runif(1)<0.5,PA,PB)
+    for (j in 1:N){
+      flips[i,j] <- ifelse(runif(1)<prob,1,0)
+    }
+  }
+  
+  dpA <- dpB <- 1
+  thresh <- 0.0001
+  
+  while (abs((dpA+dpB)/2)>= thresh){
+      
+    coins <- c(0,0,0,0)
+    for (i in 1:sets){
+      wA <- pA^rowSums(flips)[i]*(1-pA)^(N-rowSums(flips)[i])
+      wB <- pB^rowSums(flips)[i]*(1-pB)^(N-rowSums(flips)[i])
+      wA <- wA/(wA+wB)
+      wB <- wB/(wA+wB)
+      coins[1] <- coins[1] + wA*rowSums(flips)[i]
+      coins[2] <- coins[2] + wA*(N-rowSums(flips)[i])
+      coins[3] <- coins[3] + wB*rowSums(flips)[i]
+      coins[4] <- coins[4] + wB*(N-rowSums(flips)[i])
+    }
+    
+    pAold <- pA
+    pBold <- pB
+  
+    pA <- coins[1]/(coins[1]+coins[2])
+    pB <- coins[3]/(coins[3]+coins[4])
+    
+    dpA <- pA - pAold
+    dpB <- pB - pBold
+  }
+  return(c(pA,pB))
+}
+@
+  From this, we can ask some questions about how sensitive it is to wiggling of the parameters.  First lets look at the sensitivity of the EM algorithm to the initial probability estimates:
+  
+<<>>=
+temp <- 
+p <-seq(.1, .8, length.out=100)
+aresults <- matrix(NA,100,3)
+for (n in 1:100){
+  temp <- matrix(NA,100,2)
+  a <- p[n]
+  for (i in 1:100){
+    t <- EM(.3,.7,5,10,a,.8)
+    temp[i,1] <- (t[1]-.3)^2
+    temp[i,2] <- (t[2]-.7)^2
+  }
+  aresults[n,1] <- 0.8-p[n]
+  aresults[n,2] <- mean(temp[,1])
+  aresults[n,3] <- mean(temp[,2])
+}
+
+plot(aresults[,1],aresults[,2],main='First Probability Estimation', xlab='Separation Between Starting Estimates', ylab='Mean Square Error')
+plot(aresults[,1],aresults[,3],main='Second Probability Estimation', xlab='Separation Between Starting Estimates', ylab='Mean Square Error')
+
+@
+  Looking at the two probability estimates, it doesn't appear that there's a relationship between the separation of the starting values and the mean square error.  Next we examine the error in the estimates and the choice of the true parameters:
+  
+<<>>=
+
+P <-seq(0, .8, length.out=100)
+bresults <- matrix(NA,100,3)
+for (n in 1:100){
+  temp <- matrix(NA,100,2)
+  a <- P[n]
+  for (i in 1:100){
+    t <- EM(a,.8,5,10,.45,.55)
+    temp[i,1] <- (t[1]-a)^2
+    temp[i,2] <- (t[2]-.8)^2
+  }
+  bresults[n,1] <- 0.8-a
+  bresults[n,2] <- mean(temp[,1])
+  bresults[n,3] <- mean(temp[,2])
+}
+
+plot(bresults[,1],bresults[,2],main='First Probability Estimation', xlab='Separation Between True Parameters', ylab='Mean Square Error')
+plot(bresults[,1],bresults[,3],main='Second Probability Estimation', xlab='Separation Between True Parameters', ylab='Mean Square Error')
+
+@
+  
+  Looking at these plots, mean square error increases as the separation between the two parameters increases.  This makes sense, becuase the farther apart the two probabilities are, the more "work" the algorithm has to do to discern between what coin generated which data set.  Next we look at the number of coin flips per set (with the number of sets held constant at 5):
+  
+<<>>=
+cresults <- matrix(NA,100,3)
+for (N in 1:100){
+  temp <- matrix(NA,100,2)
+  for (i in 1:100){
+    t <- EM(.3,.7,5,N,.45,.55)
+    temp[i,1] <- (t[1]-.3)^2
+    temp[i,2] <- (t[2]-.7)^2
+  }
+  cresults[N,1] <- N
+  cresults[N,2] <- mean(temp[,1])
+  cresults[N,3] <- mean(temp[,2])
+}
+plot(cresults[,1],cresults[,2],main='First Probability Estimation', xlab='Number of Coin Flips', ylab='Mean Square Error')
+plot(cresults[,1],cresults[,3],main='Second Probability Estimation', xlab='Number of Coin Flips', ylab='Mean Square Error')
+
+@
+  Here it's clear that more coin flips per set quickly reduces the mean square error, but the effect tapers off quite rapidly.  Next we look at the effect of the number of sets of flips (with flips per set held constant at 10).
+  
+<<>>=
+dresults <- matrix(NA,100,3)
+for (N in 1:100){
+  temp <- matrix(NA,100,2)
+  for (i in 1:100){
+    t <- EM(.3,.7,N,10,.45,.55)
+    temp[i,1] <- (t[1]-.3)^2
+    temp[i,2] <- (t[2]-.7)^2
+  }
+  dresults[N,1] <- N
+  dresults[N,2] <- mean(temp[,1])
+  dresults[N,3] <- mean(temp[,2])
+}
+
+plot(dresults[,1],dresults[,2],main='First Probability Estimation', xlab='Number of Sets of Flips', ylab='Mean Square Error')
+plot(dresults[,1],dresults[,3],main='Second Probability Estimation', xlab='Number of Sets of Flips', ylab='Mean Square Error')
+@
+
+  Here we see that the number of sets of flips has an effect similar to the number of flips per set - quickly reducing the mean square error, but also tapering off relatively quickly.
+
+\end{enumerate}
+
+\end{document}
