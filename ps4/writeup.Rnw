@@ -65,7 +65,7 @@ get.pseudop(obs.ts2,ts2)
 		\item
 		\textit{Does ts2 become a more discerning test statistic (in an
 		absolute sense, not relative to ts1) as we increase N?}
-<<>>=
+<<knitr::knit,fig=TRUE>>=
 ##1. does ts2 become a more discerning test statistic (in an absolute sense, not relative to ts1) as we increase N?
 
 pp <- numeric()
@@ -215,7 +215,7 @@ axis(1, at=1:45, labels=mathitems, las=3)
 
 @
 
-Part of why we may be seeing this pattern is that this test is that items like item 2\_11 may be too difficult for this group. The red items in the next plot indicate items that have a mean score below .25, which could indicate that even high readers either had big misunderstandings or resorted to guessing. All of the hardest items had negative $\beta_2$s.
+Part of why we may be seeing this pattern is that this test is that items like item 2\_11 may be too difficult for this group. In fact, 2\_11 has an easiness of $d$ = -1.7. The red items in the next plot indicate items that have a mean score below .25, which could indicate that even high readers either had big misunderstandings or resorted to guessing. All of the hardest items had negative $\beta_2$s.
 <<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide'>>=
 meanss <- list()
 for (i in mathitems){
@@ -234,7 +234,7 @@ axis(1, at=1:45, labels=mathitems)
 When the groups are split differently so more students are in the low-scoring readers' group (n = 1000), there are still items showing statistically significant negative $\beta_2$s, indicating that the very top readers are still more inclined to answer these items incorrectly. Items like 1\_11 have statistically significantly negative $\beta_2$s except in the most exclusive splittings of the reading groups, indicating that the middle-high readers are getting the item disproportionately wrong, but the highest readers are managing it.
 
 When the groups are split so the low-scoring readers group is quite small (n = 462), there are still a few items with negative $\beta_2$s. There may be something wrong with the item. Item 1\_11 stands out in this group.
-<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide'>>=
+<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide',fig=TRUE>>=
 #Variable G: by rdg score, Group 1 = high score
 dfDIF$rdg_G = 0
 for (i in 732:1462){
@@ -291,6 +291,70 @@ plot(Bsnps$x, xlab="items", ylab="Beta_2", col = ifelse(Bsnps$y < .05,'red','gre
 axis(1, at=1:45, labels=mathitems, las = 3)
 
 @
+	\item
+\textit{BONUS: Does your answer change if you consider theta estimates in place of sum scores for step 3?}
+
+When using theta values based on math test scores instead of sum scores, the trends across $\beta_2$s are quite similar, but there is some shifting. Namely, items with higher discrimination see increases in their $\beta_2$s and items with lower discrimination see decreases in their $\beta_2$s when using thetas instead of sum scores in the regression.
+<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide', fig = TRUE>>=
+
+#thetas?
+thetas2 <- dfDIF[,2:46]
+names(thetas2)
+library(mirt)
+mod2<-mirt(thetas2,1,itemtype="2PL")
+coef(mod2) ##see variation in the slopes? is there a lot or a little? how could we change this?
+##now let's get theta values
+theta<-fscores(mod2,full.scores.SE=TRUE) ##what flavor scores are these?
+par(mfrow=c(1,2))
+#plot(rowSums(thetas2),theta[,1],xlab="sum score",ylab="theta")
+#plot(theta,xlab="theta",ylab="se")
+theta[1:5,]
+#create column of math thetas
+for (i in 1:1462){
+  dfDIF$math_theta[i] = theta[i,1]
+}
+
+#sort by rdgscore
+dfDIF<- dfDIF[order(dfDIF$rdgscore, dfDIF$math_theta),]
+library(tidyr)
+Bsnps = data.frame(x = 1:45, y = 1:45, row.names = mathitems)
+#Plot Beta_2 and colorcode for pvalues
+for (i in mathitems){
+  lmfit <-  glm(dfDIF[,i] ~ math_theta + rdg_G, family = "binomial", dfDIF)
+  Bsnps1 <- tidy(lmfit)
+  Bsnps[i,] <- c(Bsnps1[3,2], Bsnps1[3,5])
+}
+
+@
+
+<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide', fig = TRUE>>=
+
+plot(Bsnps$x, xlab="items", ylab="Beta_2", col = ifelse(Bsnps$y < .05,'red','green'), main = "Beta_2 of theta when low reading group n = 731", xaxt='n')
+axis(1, at=1:45, labels=mathitems, las=3)
+@
+
+<<echo=FALSE, warning=FALSE,message=FALSE,error=FALSE, results='hide', fig = TRUE>>=
+Bcomp = data.frame(thetaBetas = 1:45, sumscoreBetas = 1:45, Difference = 1:45, Difficulty = 1:45, row.names = mathitems)
+#Plot comparisons
+for (i in mathitems){
+  lmfit <-  glm(dfDIF[,i] ~ math_theta + rdg_G, family = "binomial", dfDIF)
+  Bsnps1 <- tidy(lmfit)
+  Bcomp[i,1] <- Bsnps1[3,2]
+  lmfit2 <-  glm(dfDIF[,i] ~ math_X + rdg_G, family = "binomial", dfDIF)
+  Bsnps1 <- tidy(lmfit2)
+  Bcomp[i,2] <- Bsnps1[3,2]
+}
+
+Bcomp[,3] = Bcomp[,2] - Bcomp[,1]
+
+easy <- coef(mod2, as.data.frame = TRUE)
+groupeasy = list()
+groupeasy <- easy[c(seq(1,180, 4))]
+Bcomp[,4]=groupeasy
+Bcomp2 <- Bcomp[order(Bcomp$Difficulty, Bcomp$Difference),]
+plot(Bcomp2$Difficulty, Bcomp2$Difference, xlab = "Item Discrimination", ylab = "Difference in Betas, Sum -> Theta", main = "The effect of item discrimination on Beta2 when using sumscores vs. thetas")
+@
+	
 	\item
 <<message=FALSE,results='hide'>>=
 set.seed(12311)
